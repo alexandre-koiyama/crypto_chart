@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CHART PREDICTION</title>
+    <style>
+      :root{
+        --bg:#f6f7fb;
+        --card:#ffffff;
+        --border:rgba(15,23,42,.12);
+        --text:#0f172a;
+        --muted:rgba(15,23,42,.65);
+        --accent:#2563eb;
+        --shadow:0 10px 26px rgba(2,6,23,.08);
+        --radius:12px;
+      }
+
+      *{ box-sizing:border-box; }
+      body{
+        margin:0;
+        font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+        background:linear-gradient(180deg,#ffffff 0%, var(--bg) 100%);
+        color:var(--text);
+      }
+
+      .wrap{ max-width:1100px; margin:22px auto; padding:0 14px; }
+      header{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:12px; }
+      h1{ font-size:18px; margin:0; letter-spacing:.2px; }
+      .subtitle{ color:var(--muted); font-size:12px; }
+
+      .card{
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:var(--radius);
+        box-shadow:var(--shadow);
+        overflow:hidden;
+      }
+
+      .controls{
+        padding:12px;
+        border-bottom:1px solid var(--border);
+        display:grid;
+        grid-template-columns: 1.2fr .9fr .9fr auto;
+        gap:10px;
+        align-items:end;
+      }
+
+      .field{ display:grid; gap:6px; }
+      .label{ font-size:12px; color:var(--muted); }
+
+      input[type="search"], input[type="date"]{
+        width:100%;
+        padding:10px 12px;
+        border-radius:10px;
+        border:1px solid var(--border);
+        background:#fff;
+        color:var(--text);
+        outline:none;
+      }
+      input[type="search"]::placeholder{ color:rgba(15,23,42,.35); }
+      input[type="search"]:focus, input[type="date"]:focus{
+        border-color:rgba(37,99,235,.55);
+        box-shadow:0 0 0 3px rgba(37,99,235,.12);
+      }
+
+      .segments{
+        padding:10px 12px 12px;
+        display:flex;
+        flex-wrap:wrap;
+        gap:10px;
+        align-items:center;
+        justify-content:space-between;
+      }
+
+      .seg{
+        display:inline-flex;
+        border:1px solid var(--border);
+        background:#fff;
+        border-radius:10px;
+        padding:4px;
+        gap:4px;
+      }
+      .seg input{ position:absolute; opacity:0; pointer-events:none; }
+      .seg label{
+        padding:8px 10px;
+        border-radius:8px;
+        cursor:pointer;
+        user-select:none;
+        color:var(--muted);
+        font-size:13px;
+        min-width:44px;
+        text-align:center;
+      }
+      .seg input:checked + label{
+        background:rgba(37,99,235,.10);
+        color:var(--accent);
+        font-weight:600;
+      }
+
+      .btn{
+        padding:10px 14px;
+        border-radius:10px;
+        border:1px solid rgba(37,99,235,.35);
+        background:var(--accent);
+        color:#fff;
+        cursor:pointer;
+        font-weight:600;
+      }
+      .btn:active{ transform:translateY(1px); }
+
+      .meta{
+        padding:10px 12px;
+        color:var(--muted);
+        font-size:12px;
+        border-bottom:1px solid var(--border);
+      }
+
+      #chart{ padding:10px; }
+
+      @media (max-width:860px){
+        .controls{ grid-template-columns:1fr 1fr; }
+      }
+      @media (max-width:520px){
+        .controls{ grid-template-columns:1fr; }
+        .seg{ width:100%; justify-content:space-between; }
+        .btn{ width:100%; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>CHART PREDICTION</h1>
+          <div class="subtitle">Plotly · Bollinger(20) · Channels(50)</div>
+        </div>
+      <!--<div class="subtitle">Type a symbol like <b>BTCUSDT</b></div> -->
+      </header>
+
+      <div class="card">
+        <form id="f" method="post" action="/plot">
+          <div class="controls">
+            <div class="field">
+              <div class="label">Symbol</div>
+              <input
+                type="search"
+                name="symbol"
+                value="{{ symbol or 'DOGEUSDT' }}"
+                placeholder="BTCUSDT"
+                required
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+              />
+            </div>
+
+            <div class="field">
+              <div class="label">Start date</div>
+              <input type="date" name="start_date" value="{{ start_date or '' }}" />
+            </div>
+
+            <div class="field">
+              <div class="label">End date</div>
+              <input type="date" name="end_date" value="{{ end_date or '' }}" />
+            </div>
+
+            <div class="field">
+              <div class="label">&nbsp;</div>
+              <button class="btn" type="submit">Get Data</button>
+            </div>
+          </div>
+
+          <div class="segments">
+            <div class="subtitle">Interval</div>
+            <div class="seg">
+              {% set iv = interval or '1m' %}
+              <span>
+                <input id="iv-1m" type="radio" name="interval" value="1m" {{ 'checked' if iv=='1m' else '' }}>
+                <label for="iv-1m">1m</label>
+              </span>
+              <span>
+                <input id="iv-5m" type="radio" name="interval" value="5m" {{ 'checked' if iv=='5m' else '' }}>
+                <label for="iv-5m">5m</label>
+              </span>
+              <span>
+                <input id="iv-15m" type="radio" name="interval" value="15m" {{ 'checked' if iv=='15m' else '' }}>
+                <label for="iv-15m">15m</label>
+              </span>
+              <span>
+                <input id="iv-1h" type="radio" name="interval" value="1h" {{ 'checked' if iv=='1h' else '' }}>
+                <label for="iv-1h">1H</label>
+              </span>
+              <span>
+                <input id="iv-1d" type="radio" name="interval" value="1d" {{ 'checked' if iv=='1d' else '' }}>
+                <label for="iv-1d">Day</label>
+              </span>
+            </div>
+          </div>
+        </form>
+
+        <div class="meta">{{ title or '' }}</div>
+
+        <div id="chart">
+          {{ chart_html | safe }}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
